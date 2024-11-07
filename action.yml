@@ -1,8 +1,8 @@
-name: 'Terraform PR'
-description: 'GitHub Action for adding `terraform plan` output as a PR comment'
+name: "Terraform PR"
+description: "GitHub Action for adding `terraform plan` output as a PR comment"
 branding:
-  icon: 'package'
-  color: 'blue'
+  icon: "package"
+  color: "blue"
 inputs:
   github-token:
     description: "GitHub token for commenting on PRs. Defaults to using 'secrets.GITHUB_TOKEN'"
@@ -32,6 +32,10 @@ inputs:
     description: "Should we require the terraform validate check?"
     required: false
     default: true
+  vars:
+    description: "Terraform variables to pass to the `terraform plan` command."
+    required: false
+    default: ""
 runs:
   using: "composite"
   steps:
@@ -85,12 +89,12 @@ runs:
       run: |
         if [[ '${{ github.ref }}' != 'refs/heads/${{ inputs.apply-branch }}' ]]; then
           cd ${{ inputs.path }}
-          if $TERRAFORM_CLI_PATH/terraform-bin plan -no-color -lock-timeout=60s -lock=${{ inputs.lock-for-plan }} > ${GITHUB_WORKSPACE}/plan.out 2>&1; then
+          if $TERRAFORM_CLI_PATH/terraform-bin plan -out=plan.tfplan -lock-timeout=60s -lock=${{ inputs.lock-for-plan }} -var-file="<(echo ${{ inputs.vars }})" > ${GITHUB_WORKSPACE}/plan.out 2>&1; then
             echo "plan-outcome=success" >> $GITHUB_OUTPUT
           else
             echo "plan-outcome=failure" >> $GITHUB_OUTPUT
           fi
-          cat ${GITHUB_WORKSPACE}/plan.out
+          $TERRAFORM_CLI_PATH/terraform-bin show -no-color plan.tfplan
         fi
 
     - name: Create/Update Comment
